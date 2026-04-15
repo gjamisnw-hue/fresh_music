@@ -1,11 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>George FM</title>
+
+  <!-- VK Bridge -->
   <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -17,13 +19,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      touch-action: manipulation; /* важно для мобильных */
     }
+
     .box {
       text-align: center;
       padding: 40px 20px;
       max-width: 360px;
     }
+
     .logo {
       width: 150px;
       height: 150px;
@@ -32,7 +35,12 @@
       background: url('https://i.imgur.com/2v3kL9p.png') center/cover;
       margin: 0 auto 30px;
     }
-    h1 { font-size: 32px; margin: 0 0 10px; }
+
+    h1 {
+      font-size: 32px;
+      margin: 0 0 10px;
+    }
+
     button {
       margin-top: 40px;
       padding: 18px 50px;
@@ -44,8 +52,8 @@
       color: black;
       width: 280px;
       cursor: pointer;
-      touch-action: manipulation;
     }
+
     .status {
       margin-top: 25px;
       font-size: 16px;
@@ -53,52 +61,87 @@
     }
   </style>
 </head>
+
 <body>
   <div class="box">
     <div class="logo"></div>
     <h1>George FM</h1>
-    <p style="color:#00ffcc; margin-bottom: 30px;">Dance & Electronic • 24/7</p>
+    <p style="color:#00ffcc;">Dance & Electronic • 24/7</p>
 
     <button id="playBtn">▶️ Слушать George FM</button>
     <div class="status" id="status"></div>
   </div>
 
   <script>
-    // Инициализация VK Bridge с небольшой задержкой
-    setTimeout(() => {
-      VKBridge.send('VKWebAppInit').catch(() => {});
-    }, 100);
-
     const streamUrl = "https://mediaworks.streamguys1.com/george_net/playlist.m3u8";
     const audio = new Audio(streamUrl);
+
     const btn = document.getElementById('playBtn');
     const status = document.getElementById('status');
-    let isPlaying = false;
 
-    btn.addEventListener('click', function() {
+    let isPlaying = false;
+    let vkReady = false;
+
+    // 🚀 Инициализация VK Bridge
+    if (typeof VKBridge !== 'undefined') {
+      VKBridge.send('VKWebAppInit')
+        .then(() => {
+          vkReady = true;
+          console.log('VK Bridge initialized');
+        })
+        .catch((e) => {
+          console.warn('VK Bridge error:', e);
+        });
+    } else {
+      console.warn('VK Bridge not found (открыто вне VK)');
+    }
+
+    // ▶️ Кнопка play/pause
+    btn.addEventListener('click', async () => {
       if (isPlaying) {
         audio.pause();
         btn.textContent = "▶️ Слушать George FM";
         status.textContent = "Пауза";
         isPlaying = false;
-      } else {
-        status.textContent = "Загрузка...";
-        audio.play()
-          .then(() => {
-            btn.textContent = "⏸ Пауза";
-            status.textContent = "✅ Играет • Можно сворачивать";
-            isPlaying = true;
-          })
-          .catch(() => {
-            status.textContent = "Не удалось запустить. Нажми ещё раз.";
-          });
+        return;
+      }
+
+      status.textContent = "Загрузка...";
+
+      try {
+        await audio.play();
+
+        btn.textContent = "⏸ Пауза";
+        status.textContent = "✅ Играет • Можно сворачивать";
+        isPlaying = true;
+
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Не удалось запустить. Нажми ещё раз.";
       }
     });
 
-    // Дополнительно для мобильных тачей
-    btn.addEventListener('touchstart', function(e) {
-      e.preventDefault(); // предотвращаем возможные конфликты
-    }, { passive: false });
+    // 📱 Обработка состояния аудио
+    audio.addEventListener('waiting', () => {
+      if (isPlaying) status.textContent = "Буферизация...";
+    });
+
+    audio.addEventListener('playing', () => {
+      if (isPlaying) status.textContent = "✅ Играет • Можно сворачивать";
+    });
+
+    audio.addEventListener('error', () => {
+      status.textContent = "❌ Ошибка потока";
+      isPlaying = false;
+      btn.textContent = "▶️ Слушать George FM";
+    });
+
+    // 📵 Автопауза при сворачивании (опционально)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isPlaying) {
+        console.log('App hidden (но звук продолжит играть в VK)');
+      }
+    });
   </script>
 </body>
 </html>
