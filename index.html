@@ -4,43 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>George FM</title>
-
-  <!-- VK Bridge -->
-  <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-
   <style>
     body {
       margin: 0;
       padding: 0;
       height: 100vh;
       background: #0f0f1e;
-      font-family: system-ui, sans-serif;
       color: white;
+      font-family: system-ui, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .box {
       text-align: center;
-      padding: 40px 20px;
-      max-width: 360px;
     }
-
+    .content {
+      padding: 40px 20px;
+    }
     .logo {
-      width: 150px;
-      height: 150px;
+      width: 160px;
+      height: 160px;
       border-radius: 50%;
       border: 8px solid #00ffcc;
       background: url('https://i.imgur.com/2v3kL9p.png') center/cover;
       margin: 0 auto 30px;
     }
-
-    h1 {
-      font-size: 32px;
-      margin: 0 0 10px;
-    }
-
+    h1 { font-size: 32px; margin: 0 0 10px; }
+    p { color: #00ffcc; font-size: 18px; }
     button {
       margin-top: 40px;
       padding: 18px 50px;
@@ -51,97 +40,24 @@
       background: #00ffcc;
       color: black;
       width: 280px;
-      cursor: pointer;
-    }
-
-    .status {
-      margin-top: 25px;
-      font-size: 16px;
-      min-height: 24px;
     }
   </style>
 </head>
-
 <body>
-  <div class="box">
+  <div class="content">
     <div class="logo"></div>
     <h1>George FM</h1>
-    <p style="color:#00ffcc;">Dance & Electronic • 24/7</p>
-
-    <button id="playBtn">▶️ Слушать George FM</button>
-    <div class="status" id="status"></div>
+    <p>Dance & Electronic • 24/7</p>
+    <button onclick="startRadio()">▶️ Слушать George FM</button>
   </div>
 
   <script>
-    const streamUrl = "https://mediaworks.streamguys1.com/george_net/playlist.m3u8";
-    const audio = new Audio(streamUrl);
-
-    const btn = document.getElementById('playBtn');
-    const status = document.getElementById('status');
-
-    let isPlaying = false;
-    let vkReady = false;
-
-    // 🚀 Инициализация VK Bridge
-    if (typeof VKBridge !== 'undefined') {
-      VKBridge.send('VKWebAppInit')
-        .then(() => {
-          vkReady = true;
-          console.log('VK Bridge initialized');
-        })
-        .catch((e) => {
-          console.warn('VK Bridge error:', e);
-        });
-    } else {
-      console.warn('VK Bridge not found (открыто вне VK)');
+    function startRadio() {
+      const audio = new Audio("https://mediaworks.streamguys1.com/george_net/playlist.m3u8");
+      audio.play()
+        .then(() => alert("✅ Звук запущен!"))
+        .catch(() => alert("Не удалось запустить звук"));
     }
-
-    // ▶️ Кнопка play/pause
-    btn.addEventListener('click', async () => {
-      if (isPlaying) {
-        audio.pause();
-        btn.textContent = "▶️ Слушать George FM";
-        status.textContent = "Пауза";
-        isPlaying = false;
-        return;
-      }
-
-      status.textContent = "Загрузка...";
-
-      try {
-        await audio.play();
-
-        btn.textContent = "⏸ Пауза";
-        status.textContent = "✅ Играет • Можно сворачивать";
-        isPlaying = true;
-
-      } catch (err) {
-        console.error(err);
-        status.textContent = "❌ Не удалось запустить. Нажми ещё раз.";
-      }
-    });
-
-    // 📱 Обработка состояния аудио
-    audio.addEventListener('waiting', () => {
-      if (isPlaying) status.textContent = "Буферизация...";
-    });
-
-    audio.addEventListener('playing', () => {
-      if (isPlaying) status.textContent = "✅ Играет • Можно сворачивать";
-    });
-
-    audio.addEventListener('error', () => {
-      status.textContent = "❌ Ошибка потока";
-      isPlaying = false;
-      btn.textContent = "▶️ Слушать George FM";
-    });
-
-    // 📵 Автопауза при сворачивании (опционально)
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && isPlaying) {
-        console.log('App hidden (но звук продолжит играть в VK)');
-      }
-    });
   </script>
 </body>
 </html>
